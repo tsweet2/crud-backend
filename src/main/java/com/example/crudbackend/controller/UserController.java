@@ -1,7 +1,10 @@
 package com.example.crudbackend.controller;
 
 import com.example.crudbackend.model.User;
+import com.example.crudbackend.model.dto.UserDTO;
 import com.example.crudbackend.service.UserService;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -16,14 +19,18 @@ public class UserController {
     }
 
     @GetMapping
-    public List<User> getUsers() { return userService.getAllUsers(); }
+    public List<UserDTO> getUsers() { return userService.getAllUsers(); }
 
-    @GetMapping("/{id}")
-    public User getUserById(@PathVariable Long id) { return userService.getUserById(id); }
+    @GetMapping("/id")
+    public UserDTO getUserById(@PathVariable Long id) { return userService.getUserById(id); }
 
     @PostMapping
-    public User createUser(@RequestBody User user) { return userService.saveUser(user); }
+    public UserDTO createUser(@RequestBody UserDTO userDTO) { return userService.saveUser(userDTO); }
+
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) { userService.deleteUser(id); }
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+    return ResponseEntity.noContent().build();  // ✅ 204 No Content on success
+    }
 }
