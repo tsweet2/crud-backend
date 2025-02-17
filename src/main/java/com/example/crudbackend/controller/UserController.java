@@ -1,10 +1,10 @@
 package com.example.crudbackend.controller;
 
-import com.example.crudbackend.model.User;
 import com.example.crudbackend.model.dto.UserDTO;
 import com.example.crudbackend.service.UserService;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -18,8 +18,11 @@ public class UserController {
         this.userService = userService;
     }
 
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')") 
     @GetMapping
-    public List<UserDTO> getUsers() { return userService.getAllUsers(); }
+    public List<UserDTO> getUsers() { 
+        System.out.println("🟢 Inside UserController: Fetching users...");
+        return userService.getAllUsers(); }
 
     @GetMapping("/id")
     public UserDTO getUserById(@PathVariable Long id) { return userService.getUserById(id); }
@@ -33,4 +36,5 @@ public class UserController {
         userService.deleteUser(id);
     return ResponseEntity.noContent().build();  // ✅ 204 No Content on success
     }
+
 }
