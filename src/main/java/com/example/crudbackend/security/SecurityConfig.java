@@ -2,25 +2,23 @@ package com.example.crudbackend.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
-import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) 
 public class SecurityConfig {
     private final JwtUtil jwtUtil;
 
@@ -28,24 +26,37 @@ public class SecurityConfig {
         this.jwtUtil = jwtUtil;
     }
 
-    @Bean
+@Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())  // Disable CSRF for JWT-based authentication
+            // Configure CORS via a configuration source rather than disabling
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of("http://localhost:4200")); // Allow your Angular app
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+                config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+                config.setAllowCredentials(true);
+                return config;
+            }))
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // Permit all OPTIONS requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Permit all requests to the auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/users", "/api/users/**").hasAnyAuthority("USER", "ADMIN")  // Allow login & register
-                .anyRequest().authenticated()  // Require authentication for other endpoints
+                // Protect the user endpoints
+                .requestMatchers("/api/users", "/api/users/**").hasAnyAuthority("USER", "ADMIN")
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // No session state (JWT only)
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);;
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ Register BCryptPasswordEncoder as a Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -55,19 +66,8 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
+}
 
-    @Bean
-public AccessDeniedHandler accessDeniedHandler() {
-    return (request, response, accessDeniedException) -> {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) principal;
-            System.out.println("Access Denied for user: " + userDetails.getUsername());
-            System.out.println("Authorities: " + userDetails.getAuthorities());
-        }
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
-    };
-}
-}
+
 
 
