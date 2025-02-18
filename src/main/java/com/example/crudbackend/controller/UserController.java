@@ -18,23 +18,42 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')") 
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
     @GetMapping
-    public List<UserDTO> getUsers() { 
+    public List<UserDTO> getUsers() {
         System.out.println("🟢 Inside UserController: Fetching users...");
-        return userService.getAllUsers(); }
-
-    @GetMapping("/id")
-    public UserDTO getUserById(@PathVariable Long id) { return userService.getUserById(id); }
-
-    @PostMapping
-    public UserDTO createUser(@RequestBody UserDTO userDTO) { return userService.saveUser(userDTO); }
-
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-    return ResponseEntity.noContent().build();  // ✅ 204 No Content on success
+        return userService.getAllUsers();
     }
 
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        System.out.println("🟢 Inside UserController: Fetching user with ID " + id);
+        UserDTO user = userService.getUserById(id);
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO userDTO) {
+        System.out.println("🟢 Inside UserController: Creating user...");
+        UserDTO createdUser = userService.saveUser(userDTO);
+        return ResponseEntity.ok(createdUser);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody UserDTO updatedUser) {
+        System.out.println("🟡 Inside UserController: Updating user with ID " + id);
+        UserDTO user = userService.updateUser(id, updatedUser);
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        System.out.println("🔴 Inside UserController: Deleting user with ID " + id);
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build(); // ✅ 204 No Content on success
+    }
 }
