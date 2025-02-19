@@ -38,6 +38,8 @@ public class UserService {
         user.setFirstName(userDTO.getFirstName());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setEmailAddress(userDTO.getEmailAddress());
+        user.setPassword(userDTO.getPassword());
+        user.setRole(userDTO.getRole());
     
         User savedUser = userRepository.save(user);
         return new UserDTO(savedUser.getUserID(), savedUser.getLastName(), savedUser.getFirstName(), savedUser.getPhoneNumber(), savedUser.getEmailAddress(), savedUser.getPassword(), savedUser.getRole());
@@ -50,7 +52,10 @@ public class UserService {
             User user = existingUserOpt.get();
             user.setFirstName(updatedUserDTO.getFirstName());
             user.setLastName(updatedUserDTO.getLastName());
+            user.setPhoneNumber(updatedUserDTO.getPhoneNumber());
             user.setEmailAddress(updatedUserDTO.getEmailAddress());
+            user.setPassword(updatedUserDTO.getPassword());
+            user.setRole(updatedUserDTO.getRole());
             userRepository.save(user);
 
             System.out.println("✅ User updated: " + user.getFirstName() + " " + user.getLastName());
