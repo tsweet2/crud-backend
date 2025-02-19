@@ -53,7 +53,7 @@ public JwtAuthenticationFilter jwtAuthenticationFilter() {
              // ✅ Allow GET, PUT, and DELETE for USER and ADMIN
              .requestMatchers(HttpMethod.GET, "/api/users").hasAnyAuthority("USER", "ADMIN")
              .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyAuthority("USER", "ADMIN") // ✅ Explicitly allow PUT
-             .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN") // ✅ Restrict DELETE to admins
+             .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAnyAuthority("USER","ADMIN") // ✅ Restrict DELETE to admins
              .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
