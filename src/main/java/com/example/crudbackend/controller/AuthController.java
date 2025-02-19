@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.example.crudbackend.security.JwtUtil;
 import com.example.crudbackend.model.User;
+import com.example.crudbackend.model.dto.UserDTO;
 import com.example.crudbackend.repository.UserRepository;
 
 import java.util.Collections;
@@ -39,17 +40,19 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully");
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
-        Optional<User> existingUser = userRepository.findByEmailAddress(user.getEmailAddress());
-    
-        if (existingUser.isPresent() && passwordEncoder.matches(user.getPassword(), existingUser.get().getPassword())) {
-            String role = existingUser.get().getRole(); // ✅ Get role from database
-            String token = jwtUtil.generateToken(existingUser.get().getEmailAddress(), role); // ✅ Pass role to token
-            return ResponseEntity.ok(Collections.singletonMap("token", token));
-        }
-    
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+@PostMapping("/login")
+public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO) {
+    User user = userRepository.findByEmailAddress(userDTO.getEmailAddress())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    // Compare hashed passwords
+    if (!passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
     }
+
+    String token = jwtUtil.generateToken(user.getEmailAddress(), user.getRole());
+    return ResponseEntity.ok(Collections.singletonMap("token", token));
+}
+
 }
 

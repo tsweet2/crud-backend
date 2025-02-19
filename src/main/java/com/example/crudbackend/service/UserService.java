@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
@@ -15,8 +16,11 @@ import com.example.crudbackend.repository.UserRepository;
 public class UserService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, ModelMapper modelMapper) {
+
+    public UserService(UserRepository userRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
     }
@@ -38,9 +42,8 @@ public class UserService {
         user.setFirstName(userDTO.getFirstName());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setEmailAddress(userDTO.getEmailAddress());
-        user.setPassword(userDTO.getPassword());
-        user.setRole(userDTO.getRole());
-    
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setRole(userDTO.getRole() != null ? userDTO.getRole() : "USER");
         User savedUser = userRepository.save(user);
         return new UserDTO(savedUser.getUserID(), savedUser.getLastName(), savedUser.getFirstName(), savedUser.getPhoneNumber(), savedUser.getEmailAddress(), savedUser.getPassword(), savedUser.getRole());
     }
@@ -56,6 +59,16 @@ public class UserService {
             user.setEmailAddress(updatedUserDTO.getEmailAddress());
             user.setPassword(updatedUserDTO.getPassword());
             user.setRole(updatedUserDTO.getRole());
+            userRepository.save(user);
+
+            if(updatedUserDTO.getPassword() != null && !updatedUserDTO.getPassword().isBlank()) {
+                user.setPassword(passwordEncoder.encode(updatedUserDTO.getPassword()));
+            }
+
+            if(updatedUserDTO.getRole() != null) {
+                user.setRole(updatedUserDTO.getRole());
+            }
+
             userRepository.save(user);
 
             System.out.println("✅ User updated: " + user.getFirstName() + " " + user.getLastName());
