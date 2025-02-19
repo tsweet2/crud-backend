@@ -27,6 +27,11 @@ public class SecurityConfig {
     }
 
 @Bean
+public JwtAuthenticationFilter jwtAuthenticationFilter() {
+    return new JwtAuthenticationFilter(jwtUtil);
+}
+
+@Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // Configure CORS via a configuration source rather than disabling
@@ -41,18 +46,20 @@ public class SecurityConfig {
             }))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Permit all OPTIONS requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Permit all requests to the auth endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                // Protect the user endpoints
-                .requestMatchers("/api/users", "/api/users/**").hasAnyAuthority("USER", "ADMIN")
-                .anyRequest().authenticated()
+             // ✅ Allow OPTIONS requests (CORS preflight)
+             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+             // ✅ Allow authentication endpoints
+             .requestMatchers("/api/auth/**").permitAll()
+             // ✅ Allow GET, PUT, and DELETE for USER and ADMIN
+             .requestMatchers(HttpMethod.GET, "/api/users").hasAnyAuthority("USER", "ADMIN")
+             .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyAuthority("USER", "ADMIN") // ✅ Explicitly allow PUT
+             .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN") // ✅ Restrict DELETE to admins
+             .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
